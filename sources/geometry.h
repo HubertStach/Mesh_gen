@@ -1,74 +1,101 @@
 #pragma once
+
+#include <raylib.h>
 #include <vector>
 
-
-namespace geo{
-
+namespace go{
     struct Node{
-        float x;
-        float y;
-        bool is_bc;
+        //Node is a single point representem by a small circle
+        int id;
+        Vector2 pos;
+        float radius = 3.0;
+        Color node_color = GREEN;
 
+        Node(float x_in, float y_in);
+        Node(Vector2 pos_in);
+        Node(Vector2 pos_in, int id);
         Node();
-        Node(float x, float y);
+        void draw();
+        void draw(float scale);
+        void draw(Color color);
+
+        void move(Vector2 vec);
+        void change_color(Color new_color);
     };
 
-    struct Edge{
-        int node_ids[2];
-
-        Edge();
-        Edge(int n1, int n2);
-    };
-
-    struct Polygon{
-        std::vector<int> node_ids;
-        std::vector<int> bc_node_ids;
-        std::vector<int> edge_ids;
-
-        Polygon();
-        Polygon(std::vector<int> node_ids);
+    struct Segment{
+        //segement is made up of two points
+        Node tab[2];
+        
+        Segment(Node node_start, Node node_end);
+        Segment();
+        void draw();
+        void draw(float scale);
+        void move(Vector2);
+        
+        float len();
+            
+        bool operator<(const Segment &other) const {
+        if (tab[0].pos.x != other.tab[0].pos.x)
+            return tab[0].pos.x < other.tab[0].pos.x;
+        if (tab[0].pos.y != other.tab[0].pos.y)
+            return tab[0].pos.y < other.tab[0].pos.y;
+        if (tab[1].pos.x != other.tab[1].pos.x)
+            return tab[1].pos.x < other.tab[1].pos.x;
+            return tab[1].pos.y < other.tab[1].pos.y;
+        }
     };
 
     struct Triangle{
-        int node_ids[3];
+        Node points[3];
+        Segment edges[3];
 
+        Triangle(Node a, Node b, Node c);
         Triangle();
-        Triangle(int n1, int n2, int n3);
+
+        void draw();
+        void draw(float scale);
     };
 
-    struct Mesh{
-        std::vector<Node> nodes;
-        std::vector<Node> initial_bc_nodes;
-        std::vector<Edge> edges;
-        std::vector<Triangle> triangles;
-        std::vector<Polygon> polygons;
+    struct Vertex{
+        //vertex is just a shape made of multiple points (nodes)
+        std::vector<Node> vertices;
+        std::vector<Segment> edges;
+    
+        Vertex(std::vector<Node> nodes);
+        Vertex();
 
-        bool mesh_created = false;
+        void create_edges();
+        void draw();
+        void draw_nodes();
+        void add_vertex(Node node);
 
-        Mesh();
-        void add_point(float x, float y, bool is_bc = true);
-        void pop_point();
+        void create_edges(std::vector<Node> nodes);
 
-        void add_edge(int n1, int n2);
-        void add_tr(int n1, int n2, int n3);
+        bool Vertex::is_node_inside(const Node &node);
+        void sort_vertices_by_position();
 
-
-        //------ tworzenie siatki ------
-        void interpolate_bc_points(float spacing);
-        std::vector<geo::Node> super_triangle();
-        bool inside_circumcircle(geo::Triangle tr, int node_id);
-        bool same_triangle(geo::Triangle A, geo::Triangle B);
-        bool is_boundary_edge(std::vector<geo::Triangle> &triangles, geo::Edge edge);
-        void triangulate();
-        void create_mesh(float spacing);
-
-
-        //------Rysowanie siatki itd.------
-        void draw_nodes(float size);
-        void draw_edges();
-        void draw_tr();
+        bool ray_intersects_segment(Node point, Segment seg);
     };
-
-    float len(geo::Node A, geo::Node B);
-    float tr_size(geo::Triangle &tr, std::vector<geo::Node> nodes);
+    
+    inline bool operator==(const Node& n1, const Node& n2) {
+        return (n1.pos.x == n2.pos.x && n1.pos.y == n2.pos.y);
+    }
+    inline bool operator!=(const Node& n1, const Node& n2) {
+        return !(n1 == n2);
+    }
+    
+    inline bool operator==(const Triangle& t1, const Triangle& t2) {
+        for (int i = 0; i < 3; ++i) {
+            bool found = false;
+            for (int j = 0; j < 3; ++j) {
+                if(t1.points[i] == t2.points[j]) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) return false;
+        }
+        return true;
+    }
 }
