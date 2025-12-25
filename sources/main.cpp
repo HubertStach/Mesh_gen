@@ -2,8 +2,6 @@
 
 #include "geometry.h"
 
-#include "triangular_mesh.h"
-
 #include <vector>
 
 #define SCREEN_WIDTH (1280)
@@ -30,9 +28,7 @@ int main()
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, WINDOW_TITLE);
     SetTargetFPS(60);
 
-    std::vector<go::Node> polygon_nodes;
-    std::vector<go::Node> glob_nodes;
-    std::vector<go::Triangle> triangles;
+    geo::Mesh mesh;
 
     bool mesh_created = false;
 
@@ -43,42 +39,28 @@ int main()
 
         if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
             if(mesh_created){
-                polygon_nodes.clear();
-                triangles.clear();
-                glob_nodes.clear();
+                mesh.edges.clear();
+                mesh.triangles.clear();
+                mesh.nodes.clear();
+                mesh.initial_bc_nodes.clear();
                 mesh_created = false;
             }
 
             float x = GetMousePosition().x;
             float y = GetMousePosition().y;
-            go::Node temp(x,y);
-            polygon_nodes.push_back(temp);
+            mesh.add_point(x, y);
         }
 
         if(IsKeyPressed(KEY_ENTER)){
-            go::Vertex polygon(polygon_nodes);
-            
-            msh::triangulate_mesh(polygon, spacing, triangles, glob_nodes);
-            
-            polygon_nodes.clear();
+            mesh.create_mesh(spacing);
             mesh_created = true;
-
-            std::vector<to_fem::Triangle_ref> ref_triangles = to_fem::convert_to_fem(glob_nodes, triangles);
-            to_fem::print_mesh(glob_nodes, ref_triangles);
         }
 
-        
-        for(auto &it:polygon_nodes){
-            it.draw();
-        }
+        //rysowanie
 
-        for(auto &it:glob_nodes){
-            it.draw();
-        }
-    
-        for(auto &element:triangles){
-            element.draw();
-        }
+        mesh.draw_nodes(2);
+        mesh.draw_tr();
+
 
         EndDrawing();
     }
